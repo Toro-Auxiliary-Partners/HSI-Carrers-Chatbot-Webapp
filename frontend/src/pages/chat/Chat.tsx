@@ -38,6 +38,7 @@ import { QuestionInput } from "../../components/QuestionInput";
 import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel";
 import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
+import AuthButtonsBar from '../../components/AuthButtonsBar';
 
 const enum messageStatus {
   NotRunning = 'Not Running',
@@ -181,7 +182,7 @@ const Chat = () => {
 
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
     setIsLoading(true)
-    setShowLoadingMessage(true)
+    setShowLoadingMessage(true
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
 
@@ -1036,6 +1037,7 @@ const Chat = () => {
             appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && <ChatHistoryPanel />}
         </Stack>
       )}
+      <AuthButtonsBar />
     </div>
   )
 }
