@@ -188,7 +188,7 @@ const Chat = () => {
     //devLog?.("No api cosmo db")
     //console.log("No api cosmo db||")
     setIsLoading(true)
-    setShowLoadingMessage(true)
+    setShowLoadingMessage(true
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
 
