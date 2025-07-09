@@ -182,7 +182,7 @@ const Chat = () => {
 
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
     setIsLoading(true)
-    setShowLoadingMessage(true
+    setShowLoadingMessage(true)
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
 
