@@ -5,10 +5,8 @@ frontend/node_modules
 .azure/
 __pycache__/
 .ipynb_checkpoints/
-repomix-output.txt
 env.json
-static/assets/
-/static/assets
 live-env.json
 node_modules
-
+.env
+repomix-output.txt
