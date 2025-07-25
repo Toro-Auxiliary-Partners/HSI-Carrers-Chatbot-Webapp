@@ -9,3 +9,4 @@ env.json
 live-env.json
 node_modules
 .env
+repomix-output.txt
