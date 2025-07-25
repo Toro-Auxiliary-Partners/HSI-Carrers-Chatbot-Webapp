@@ -5,7 +5,7 @@
 }
 
 .header {
-  background-color: #f2f2f2;
+  background-color: #eeeeee;
 }
 
 .headerContainer {
@@ -108,4 +108,18 @@
   .headerIcon {
     margin-left: 26px;
   }
+  
+}
+._authButtonsBar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 0;
+    background: #860038;
+    z-index: 1000;
+    box-shadow: 0 -2px 8px #00000014;
 }
