@@ -39,6 +39,7 @@ import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel"
 import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
 import AuthButtonsBar from '../../components/AuthButtonsBar';
+import { HistoryButton } from "../../components/common/Button";
 
 const enum messageStatus {
   NotRunning = 'Not Running',
@@ -537,28 +538,18 @@ const Chat = () => {
 
   const clearChat = async () => {
     setClearingChat(true)
-    if (appStateContext?.state.currentChat?.id && appStateContext?.state.isCosmosDBAvailable.cosmosDB) {
-      let response = await historyClear(appStateContext?.state.currentChat.id)
-      if (!response.ok) {
-        setErrorMsg({
-          title: 'Error clearing current chat',
-          subtitle: 'Please try again. If the problem persists, please contact the site administrator.'
-        })
-        toggleErrorDialog()
-      } else {
-        appStateContext?.dispatch({
-          type: 'DELETE_CURRENT_CHAT_MESSAGES',
-          payload: appStateContext?.state.currentChat.id
-        })
-        appStateContext?.dispatch({ type: 'UPDATE_CHAT_HISTORY', payload: appStateContext?.state.currentChat })
-        setActiveCitation(undefined)
-        setIsCitationPanelOpen(false)
-        setIsIntentsPanelOpen(false)
-        setMessages([])
-      }
-    }
+    await historyClear(appStateContext?.state.currentChat?.id ?? "")
+    setMessages([])
     setClearingChat(false)
   }
+  // Handler to toggle chat history panel
+  const handleHistoryClick = () => {
+    appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
+  }
+  // Determine button text based on history visibility
+  const historyButtonText = appStateContext?.state.isChatHistoryOpen
+    ? 'Hide History'
+    : 'Show History'
 
   const tryGetRaiPrettyError = (errorMessage: string) => {
     try {
@@ -925,6 +916,11 @@ const Chat = () => {
                   }
                   disabled={disabledButton()}
                   aria-label="clear chat button"
+                />
+                {/* Button to toggle chat history panel */}
+                <HistoryButton
+                  onClick={handleHistoryClick}
+                  text={historyButtonText}
                 />
                 <Dialog
                   hidden={hideErrorDialog}
