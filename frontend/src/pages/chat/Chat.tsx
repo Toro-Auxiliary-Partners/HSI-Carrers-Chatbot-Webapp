@@ -567,6 +567,7 @@ const Chat = () => {
         initialPresetAdded.current = false // Reset so preset message can be shown again
       }
     }
+
     setClearingChat(false)
   }
   // Handler to toggle chat history panel
