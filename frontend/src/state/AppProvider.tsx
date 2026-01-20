@@ -72,9 +72,20 @@ export const AppStateContext = createContext<
   | {
     state: AppState
     dispatch: React.Dispatch<Action>
+    devLog: (...args: unknown[]) => void
   }
   | undefined
 >(undefined)
+
+
+// 3) Create the function in the provider and pass it in value
+const devLog = (...args: unknown[]) => {
+  console.log("devLog:", import.meta.env.DEV)
+  if (import.meta.env.DEV) {
+    console.log(...args)
+  }
+}
+
 
 type AppStateProviderProps = {
   children: ReactNode
@@ -155,5 +166,5 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({ children }) 
     getFrontendSettings()
   }, [])
 
-  return <AppStateContext.Provider value={{ state, dispatch }}>{children}</AppStateContext.Provider>
+  return <AppStateContext.Provider value={{ state, dispatch, devLog }}>{children}</AppStateContext.Provider>
 }
