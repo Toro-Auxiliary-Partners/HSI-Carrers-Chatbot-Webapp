@@ -10,3 +10,4 @@ env.json
 static/assets/
 /static/assets
 live-env.json
+node_modules
