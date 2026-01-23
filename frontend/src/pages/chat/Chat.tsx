@@ -12,7 +12,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { nord } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import styles from './Chat.module.css'
-import Contoso from '../../assets/Contoso.svg'
+import CSUDHLogo from '../../assets/csudh_brand_kit.svg';
 import { XSSAllowTags } from '../../constants/sanatizeAllowables'
 
 import {
@@ -38,6 +38,8 @@ import { QuestionInput } from "../../components/QuestionInput";
 import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel";
 import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
+import AuthButtonsBar from '../../components/AuthButtonsBar';
+import { HistoryButton } from "../../components/common/Button";
 
 const enum messageStatus {
   NotRunning = 'Not Running',
@@ -47,9 +49,11 @@ const enum messageStatus {
 
 const Chat = () => {
   const appStateContext = useContext(AppStateContext)
+  const devLog = appStateContext?.devLog
   const ui = appStateContext?.state.frontendSettings?.ui
   const AUTH_ENABLED = appStateContext?.state.frontendSettings?.auth_enabled
   const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null)
+  const initialPresetAdded = useRef<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [showLoadingMessage, setShowLoadingMessage] = useState<boolean>(false)
   const [activeCitation, setActiveCitation] = useState<Citation>()
@@ -108,7 +112,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (!appStateContext?.state.isLoading) {
-      setLogo(ui?.chat_logo || ui?.logo || Contoso)
+      setLogo(ui?.chat_logo || ui?.logo || CSUDHLogo)
     }
   }, [appStateContext?.state.isLoading])
 
@@ -141,7 +145,7 @@ const Chat = () => {
     appStateContext?.dispatch({ type: 'SET_ANSWER_EXEC_RESULT', payload: { answerId: answerId, exec_result: exec_results } })
   }
 
-  const processResultMessage = (resultMessage: ChatMessage, userMessage: ChatMessage, conversationId?: string) => {
+  const processResultMessage = (resultMessage: ChatMessage, userMessage: ChatMessage | null, conversationId?: string) => {
     if (typeof resultMessage.content === "string" && resultMessage.content.includes('all_exec_results')) {
       const parsedExecResults = JSON.parse(resultMessage.content) as AzureSqlServerExecResults
       setExecResults(parsedExecResults.all_exec_results)
@@ -168,7 +172,8 @@ const Chat = () => {
 
     if (resultMessage.role === TOOL) toolMessage = resultMessage
 
-    if (!conversationId) {
+
+    if (userMessage && !conversationId) {
       isEmpty(toolMessage)
         ? setMessages([...messages, userMessage, assistantMessage])
         : setMessages([...messages, userMessage, toolMessage, assistantMessage])
@@ -180,6 +185,8 @@ const Chat = () => {
   }
 
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
+    //devLog?.("No api cosmo db")
+    //console.log("No api cosmo db||")
     setIsLoading(true)
     setShowLoadingMessage(true)
     const abortController = new AbortController()
@@ -194,6 +201,7 @@ const Chat = () => {
       content: questionContent as string,
       date: new Date().toISOString()
     }
+
 
     let conversation: Conversation | null | undefined
     if (!conversationId) {
@@ -307,6 +315,8 @@ const Chat = () => {
   }
 
   const makeApiRequestWithCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
+    //devLog?.("cosmo api exists!")
+    //console.log("cosmo api exists!")
     setIsLoading(true)
     setShowLoadingMessage(true)
     const abortController = new AbortController()
@@ -339,7 +349,7 @@ const Chat = () => {
       }
     } else {
       request = {
-        messages: [userMessage].filter(answer => answer.role !== ERROR)
+        messages: [userMessage].filter(message => message.role !== ERROR)
       }
       setMessages(request.messages)
     }
@@ -554,10 +564,19 @@ const Chat = () => {
         setIsCitationPanelOpen(false)
         setIsIntentsPanelOpen(false)
         setMessages([])
+        initialPresetAdded.current = false // Reset so preset message can be shown again
       }
     }
     setClearingChat(false)
   }
+  // Handler to toggle chat history panel
+  const handleHistoryClick = () => {
+    appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
+  }
+  // Determine button text based on history visibility
+  const historyButtonText = appStateContext?.state.isChatHistoryOpen
+    ? 'Hide History'
+    : 'Show History'
 
   const tryGetRaiPrettyError = (errorMessage: string) => {
     try {
@@ -620,6 +639,7 @@ const Chat = () => {
     setIsCitationPanelOpen(false)
     setIsIntentsPanelOpen(false)
     setActiveCitation(undefined)
+    initialPresetAdded.current = false // Reset so preset message can be shown again
     appStateContext?.dispatch({ type: 'UPDATE_CURRENT_CHAT', payload: null })
     setProcessMessages(messageStatus.Done)
   }
@@ -696,10 +716,60 @@ const Chat = () => {
   useEffect(() => {
     if (AUTH_ENABLED !== undefined) getUserInfoList()
   }, [AUTH_ENABLED])
+ 
+  // Send a preset assistant message at the start of a new conversation
+  useEffect(() => {
+    sendPresetMessage()
+  }, [
+    messages,
+    isLoading,
+    appStateContext?.state.currentChat?.id,
+    appStateContext?.state.chatHistoryLoadingState,
+    ui?.preset_starting_message
+  ])
+
+  
+
 
   useLayoutEffect(() => {
     chatMessageStreamEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [showLoadingMessage, processMessages])
+
+  
+  const sendPresetMessage = () => {
+    if (
+      (!messages || messages.length === 0) &&
+      !isLoading &&
+      !appStateContext?.state.currentChat?.id &&
+      appStateContext?.state.chatHistoryLoadingState !== ChatHistoryLoadingState.Loading &&
+      !initialPresetAdded.current &&
+      ui?.preset_starting_message
+    ) {
+      initialPresetAdded.current = true
+      const presetMessage = ui?.preset_starting_message
+      
+      //Generate a starting message for the conversation
+      const startingMessage: ChatMessage = {
+        id: uuid(),
+        role: ASSISTANT,
+        content: presetMessage as string,
+        date: new Date().toISOString()
+      }
+  
+      //Generate a conversation object for the starting message
+      let conversation: Conversation | null | undefined
+      conversation = {
+        id: uuid(),
+        title: presetMessage as string,
+        messages: [startingMessage],
+        date: new Date().toISOString()
+      }
+      //Update the current chat in the state with the conversation object
+      appStateContext?.dispatch({ type: 'UPDATE_CURRENT_CHAT', payload: conversation })
+      setMessages(conversation.messages)
+      processResultMessage(startingMessage, null, conversation.id)
+    }
+  }
 
   const onShowCitation = (citation: Citation) => {
     setActiveCitation(citation)
@@ -925,6 +995,11 @@ const Chat = () => {
                   disabled={disabledButton()}
                   aria-label="clear chat button"
                 />
+                {/* Button to toggle chat history panel */}
+                <HistoryButton
+                  onClick={handleHistoryClick}
+                  text={historyButtonText}
+                />
                 <Dialog
                   hidden={hideErrorDialog}
                   onDismiss={handleErrorDialogClose}
@@ -933,7 +1008,7 @@ const Chat = () => {
               </Stack>
               <QuestionInput
                 clearOnSend
-                placeholder="Type a new question..."
+                placeholder= "Type a new question..."
                 disabled={isLoading}
                 onSend={(question, id) => {
                   appStateContext?.state.isCosmosDBAvailable?.cosmosDB
@@ -1036,6 +1111,7 @@ const Chat = () => {
             appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && <ChatHistoryPanel />}
         </Stack>
       )}
+      <AuthButtonsBar />
     </div>
   )
 }

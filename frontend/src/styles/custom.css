@@ -1,0 +1,13 @@
+.auth-buttons-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.auth-buttons-bar {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    align-items: center;
+}
