@@ -996,11 +996,6 @@ const Chat = () => {
                   disabled={disabledButton()}
                   aria-label="clear chat button"
                 />
-                {/* Button to toggle chat history panel */}
-                <HistoryButton
-                  onClick={handleHistoryClick}
-                  text={historyButtonText}
-                />
                 <Dialog
                   hidden={hideErrorDialog}
                   onDismiss={handleErrorDialogClose}
@@ -1108,8 +1103,7 @@ const Chat = () => {
               </Stack>
             </Stack.Item>
           )}
-          {appStateContext?.state.isChatHistoryOpen &&
-            appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && <ChatHistoryPanel />}
+          {appStateContext?.state.isChatHistoryOpen && <ChatHistoryPanel />}
         </Stack>
       )}
       <AuthButtonsBar />
