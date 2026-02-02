@@ -757,18 +757,9 @@ const Chat = () => {
         date: new Date().toISOString()
       }
   
-      //Generate a conversation object for the starting message
-      let conversation: Conversation | null | undefined
-      conversation = {
-        id: uuid(),
-        title: presetMessage as string,
-        messages: [startingMessage],
-        date: new Date().toISOString()
-      }
-      //Update the current chat in the state with the conversation object
-      appStateContext?.dispatch({ type: 'UPDATE_CURRENT_CHAT', payload: conversation })
-      setMessages(conversation.messages)
-      processResultMessage(startingMessage, null, conversation.id)
+
+      setMessages([startingMessage])
+      processResultMessage(startingMessage, null, undefined)
     }
   }
 
