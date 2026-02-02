@@ -40,6 +40,7 @@ import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
 import AuthButtonsBar from '../../components/AuthButtonsBar';
 import { HistoryButton } from "../../components/common/Button";
+import { StudySessionHandler } from '../../components/Study/StudySessionHandler';
 
 const enum messageStatus {
   NotRunning = 'Not Running',
@@ -849,8 +850,9 @@ const Chat = () => {
           </h2>
         </Stack>
       ) : (
-        <Stack horizontal className={styles.chatRoot}>
-          <div className={styles.chatContainer}>
+        <StudySessionHandler>
+          <Stack horizontal className={styles.chatRoot}>
+            <div className={styles.chatContainer}>
             {!messages || messages.length < 1 ? (
               <Stack className={styles.chatEmptyState}>
                 <img src={logo} className={styles.chatIcon} aria-hidden="true" />
@@ -1095,7 +1097,8 @@ const Chat = () => {
             </Stack.Item>
           )}
           {appStateContext?.state.isChatHistoryOpen && <ChatHistoryPanel />}
-        </Stack>
+          </Stack>
+        </StudySessionHandler>
       )}
       <AuthButtonsBar />
     </div>

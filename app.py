@@ -24,6 +24,7 @@ from azure.identity.aio import (
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.security.ms_defender_utils import get_msdefender_user_json
 from backend.history.cosmosdbservice import CosmosConversationClient
+from backend.study_service import StudyService
 from backend.settings import (
     app_settings,
     MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION
@@ -50,6 +51,9 @@ def create_app():
     async def init():
         try:
             app.cosmos_conversation_client = await init_cosmosdb_client()
+            app.study_service = None
+            if app.cosmos_conversation_client:
+                 app.study_service = StudyService(app.cosmos_conversation_client.container_client)
             cosmos_db_ready.set()
         except Exception as e:
             logging.exception("Failed to initialize CosmosDB client")
@@ -1033,6 +1037,42 @@ async def ensure_cosmos():
             )
         else:
             return jsonify({"error": "CosmosDB is not working"}), 500
+
+
+@bp.route("/api/study/status", methods=["GET"])
+async def get_study_status():
+    if not current_app.study_service:
+        return jsonify({"error": "Study service not initialized"}), 503
+        
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user["user_principal_id"]
+    
+    try:
+        status = await current_app.study_service.get_or_update_user_status(user_id)
+        return jsonify(status), 200
+    except Exception as e:
+        logging.exception("Error getting study status")
+        return jsonify({"error": str(e)}), 500
+
+@bp.route("/api/study/complete-survey", methods=["POST"])
+async def complete_survey():
+    if not current_app.study_service:
+        return jsonify({"error": "Study service not initialized"}), 503
+
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user["user_principal_id"]
+    body = await request.get_json()
+    survey_key = body.get("surveyKey")
+    
+    if not survey_key:
+         return jsonify({"error": "surveyKey is required"}), 400
+
+    try:
+        updated = await current_app.study_service.mark_survey_complete(user_id, survey_key)
+        return jsonify(updated), 200
+    except Exception as e:
+        logging.exception("Error marking survey complete")
+        return jsonify({"error": str(e)}), 500
 
 
 async def generate_title(conversation_messages) -> str:
