@@ -18,6 +18,7 @@ const Layout = () => {
   const [hideHistoryLabel, setHideHistoryLabel] = useState<string>('Hide chat history')
   const [showHistoryLabel, setShowHistoryLabel] = useState<string>('Show chat history')
   const [logo, setLogo] = useState('')
+  const [remainingTime, setRemainingTime] = useState(30 * 60);
   const appStateContext = useContext(AppStateContext)
   const ui = appStateContext?.state.frontendSettings?.ui
 
@@ -73,6 +74,27 @@ const Layout = () => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRemainingTime(prevTime => {
+        if (prevTime <= 1) {
+          clearInterval(timer);
+          window.location.href = 'https://csudh.qualtrics.com/jfe/form/SV_3HGSME2LdvClYRE';
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className={styles.layout}>
       <header className={styles.header} role={'banner'}>
@@ -84,7 +106,8 @@ const Layout = () => {
             </Link>
           </Stack>
           <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
-          {ui?.show_chat_history_button !== false && (
+            <div>{formatTime(remainingTime)}</div>
+            {ui?.show_chat_history_button !== false && (
               <HistoryButton
                 onClick={handleHistoryClick}
                 text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel}
