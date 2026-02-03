@@ -187,6 +187,7 @@ const Chat = () => {
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
     //devLog?.("No api cosmo db")
     //console.log("No api cosmo db||")
+    appStateContext?.dispatch({ type: 'START_TIMER' });
     setIsLoading(true)
     setShowLoadingMessage(true)
     const abortController = new AbortController()
@@ -317,6 +318,7 @@ const Chat = () => {
   const makeApiRequestWithCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
     //devLog?.("cosmo api exists!")
     //console.log("cosmo api exists!")
+    appStateContext?.dispatch({ type: 'START_TIMER' });
     setIsLoading(true)
     setShowLoadingMessage(true)
     const abortController = new AbortController()

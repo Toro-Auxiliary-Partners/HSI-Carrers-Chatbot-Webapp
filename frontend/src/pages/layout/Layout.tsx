@@ -75,19 +75,21 @@ const Layout = () => {
   }, [])
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setRemainingTime(prevTime => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
-          window.location.href = 'https://csudh.qualtrics.com/jfe/form/SV_3HGSME2LdvClYRE';
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
+    if (appStateContext?.state.isTimerStarted) {
+      const timer = setInterval(() => {
+        setRemainingTime(prevTime => {
+          if (prevTime <= 1) {
+            clearInterval(timer);
+            window.location.href = 'https://csudh.qualtrics.com/jfe/form/SV_3HGSME2LdvClYRE';
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
+      return () => clearInterval(timer);
+    }
+  }, [appStateContext?.state.isTimerStarted]);
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);

@@ -82,6 +82,8 @@ export const appStateReducer = (state: AppState, action: Action): AppState => {
           [action.payload.answerId]: action.payload.exec_result
         }
       }
+    case 'START_TIMER':
+      return { ...state, isTimerStarted: true }
     default:
       return state
   }
