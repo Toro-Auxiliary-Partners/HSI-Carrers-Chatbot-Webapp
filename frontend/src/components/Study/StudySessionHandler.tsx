@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getStudyStatus, markSurveyComplete, StudyStatus } from '../../api/studyApi';
-import { Dialog, DialogType, PrimaryButton, DefaultButton, Spinner, Stack, Text } from '@fluentui/react';
+import { getStudyStatus, markSurveyComplete, resetStudyStatus, StudyStatus } from '../../api/studyApi';
+import { Dialog, DialogType, PrimaryButton, DefaultButton, Spinner, Stack, Text, IButtonStyles } from '@fluentui/react';
 
 interface StudySessionHandlerProps {
     children: React.ReactNode;
@@ -10,6 +10,19 @@ const PRE_TEST_URL = "https://csudh.qualtrics.com/jfe/form/SV_065JsNDcr7yxIsm";
 const POST_SURVEY_URL = "https://csudh.qualtrics.com/jfe/form/SV_3HGSME2LdvClYRE";
 // TODO: Replace with actual Quiz URL
 const QUIZ_URL = "https://c11oh.itch.io/hsi-games"; 
+
+const debugButtonStyles: IButtonStyles = {
+    root: {
+        position: 'fixed',
+        bottom: 10,
+        right: 10,
+        zIndex: 10000, // Increased z-index
+        backgroundColor: '#f0f0f0',
+        padding: 5,
+        opacity: 0.8
+    }
+};
+ 
 
 export const StudySessionHandler: React.FC<StudySessionHandlerProps> = ({ children }) => {
     const [status, setStatus] = useState<StudyStatus | null>(null);
@@ -57,49 +70,73 @@ export const StudySessionHandler: React.FC<StudySessionHandlerProps> = ({ childr
         }
     };
 
-    if (loading) return <Spinner label="Loading study session..." ariaLive="assertive" labelPosition="right" />;
+    const handleReset = async () => {
+        if (confirm("Are you sure you want to reset your study progress? This is for development only.")) {
+            try {
+                await resetStudyStatus();
+                window.location.reload();
+            } catch (e) {
+                console.error("Failed to reset study status", e);
+            }
+        }
+    };
 
-    if (!status) return <>{children}</>; // Fallback if failed
+    const renderContent = () => {
+        if (loading) return <Spinner label="Loading study session..." ariaLive="assertive" labelPosition="right" />;
 
-    // Login 1: Pre-Test
-    if (status.loginCount === 1) {
-        if (!status.surveys.preTest) {
+        if (!status) return <>{children}</>; // Fallback if failed
+
+        // Login 1: Pre-Test
+        if (status.loginCount === 1) {
+            if (!status.surveys.preTest) {
+                return (
+                    <Stack horizontalAlign="center" verticalAlign="center" styles={{ root: { height: '100vh', padding: 20 } }} tokens={{ childrenGap: 20 }}>
+                        <Text variant="xxLarge">Welcome {status.userId}</Text>
+                        <Text variant="large">Please complete the pre-test survey to continue.</Text>
+                        <PrimaryButton href={PRE_TEST_URL} target="_blank">Go to Survey</PrimaryButton>
+                        <DefaultButton onClick={handlePreSurveyComplete}>I have completed the survey</DefaultButton>
+                    </Stack>
+                );
+            }
+            // If completed, show children (Chatbot)
+            return <>{children}</>;
+        }
+
+        // Login 2 & 3
+        if (status.loginCount === 2 || status.loginCount === 3) {
+            // Control Group: Quiz
+            if (status.treatmentGroup === 'control') {
+                return (
+                    <>
+                        <iframe src={QUIZ_URL} style={{ width: '100%', height: '100vh', border: 'none' }} title="Quiz" />
+                        <PostSurveyDialog isOpen={showPostSurvey} />
+                    </>
+                )
+            }
+            
+            // Treatment Group: Chatbot
             return (
-                <Stack horizontalAlign="center" verticalAlign="center" styles={{ root: { height: '100vh', padding: 20 } }} tokens={{ childrenGap: 20 }}>
-                     <Text variant="xxLarge">Welcome {status.userId}</Text>
-                     <Text variant="large">Please complete the pre-test survey to continue.</Text>
-                     <PrimaryButton href={PRE_TEST_URL} target="_blank">Go to Survey</PrimaryButton>
-                     <DefaultButton onClick={handlePreSurveyComplete}>I have completed the survey</DefaultButton>
-                </Stack>
+                <>
+                    {children}
+                    <PostSurveyDialog isOpen={showPostSurvey} />
+                </>
             );
         }
-        // If completed, show children (Chatbot)
-        return <>{children}</>;
-    }
-
-    // Login 2 & 3
-    if (status.loginCount === 2 || status.loginCount === 3) {
-        // Control Group: Quiz
-        if (status.treatmentGroup === 'control') {
-             return (
-                 <>
-                    <iframe src={QUIZ_URL} style={{ width: '100%', height: '100vh', border: 'none' }} title="Quiz" />
-                    <PostSurveyDialog isOpen={showPostSurvey} />
-                 </>
-             )
-        }
         
-        // Treatment Group: Chatbot
-        return (
-            <>
-                {children}
-                <PostSurveyDialog isOpen={showPostSurvey} />
-            </>
-        );
-    }
-    
-    // Default fallback (Login > 3)
-    return <>{children}</>;
+        // Default fallback (Login > 3)
+        return <>{children}</>;
+    };
+
+    return (
+        <>
+            {renderContent()}
+            <DefaultButton 
+                text="Reset Progress (Dev)" 
+                onClick={handleReset} 
+                styles={debugButtonStyles}
+            />
+        </>
+    );
 };
 
 const PostSurveyDialog = ({ isOpen }: { isOpen: boolean }) => {

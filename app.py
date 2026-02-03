@@ -25,6 +25,7 @@ from backend.auth.auth_utils import get_authenticated_user_details
 from backend.security.ms_defender_utils import get_msdefender_user_json
 from backend.history.cosmosdbservice import CosmosConversationClient
 from backend.study_service import StudyService
+from backend.study_manager import StudyManager
 from backend.settings import (
     app_settings,
     MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION
@@ -52,8 +53,10 @@ def create_app():
         try:
             app.cosmos_conversation_client = await init_cosmosdb_client()
             app.study_service = None
+            app.study_manager = None
             if app.cosmos_conversation_client:
                  app.study_service = StudyService(app.cosmos_conversation_client.container_client)
+                 app.study_manager = StudyManager(app.cosmos_conversation_client.container_client)
             cosmos_db_ready.set()
         except Exception as e:
             logging.exception("Failed to initialize CosmosDB client")
@@ -80,6 +83,7 @@ async def favicon():
 @bp.route("/assets/<path:path>")
 async def assets(path):
     return await send_from_directory("static/assets", path)
+
 
 
 # Debug settings
@@ -1061,17 +1065,157 @@ async def complete_survey():
 
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user["user_principal_id"]
-    body = await request.get_json()
-    survey_key = body.get("surveyKey")
-    
-    if not survey_key:
-         return jsonify({"error": "surveyKey is required"}), 400
 
     try:
-        updated = await current_app.study_service.mark_survey_complete(user_id, survey_key)
-        return jsonify(updated), 200
+        data = await request.get_json()
+        survey_key = data.get("surveyKey")
+        if not survey_key:
+            return jsonify({"error": "surveyKey is required"}), 400
+
+        res = await current_app.study_service.mark_survey_complete(user_id, survey_key)
+        return jsonify(res), 200
     except Exception as e:
-        logging.exception("Error marking survey complete")
+        logging.exception("Error completing survey")
+        return jsonify({"error": str(e)}), 500
+
+@bp.route("/api/study/reset", methods=["POST"])
+async def reset_study_status():
+    if not hasattr(current_app, "study_service") or not current_app.study_service:
+        return jsonify({"error": "Study service not initialized"}), 503
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user["user_principal_id"]
+
+    try:
+        success = await current_app.study_service.reset_user_status(user_id)
+        return jsonify({"success": success}), 200
+    except Exception as e:
+        logging.exception("Error in reset_study_status")
+        return jsonify({"error": str(e)}), 500
+
+
+# --- New Study Workflow API (Dev-Tooling friendly) ---
+
+
+@bp.route("/api/study/state", methods=["GET"])
+async def study_get_state():
+    if not hasattr(current_app, "study_manager") or not current_app.study_manager:
+        return jsonify({"error": "Study manager not initialized"}), 503
+
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user.get("user_principal_id")
+    username = authenticated_user.get("user_name")
+    if not user_id:
+        return jsonify({"error": "User not authenticated"}), 401
+
+    try:
+        state = await current_app.study_manager.get_user_state(user_id=user_id, username=username)
+        return jsonify(state), 200
+    except Exception as e:
+        logging.exception("Error in /api/study/state")
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/study/login", methods=["POST"])
+async def study_register_login():
+    if not hasattr(current_app, "study_manager") or not current_app.study_manager:
+        return jsonify({"error": "Study manager not initialized"}), 503
+
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user.get("user_principal_id")
+    username = authenticated_user.get("user_name")
+    if not user_id:
+        return jsonify({"error": "User not authenticated"}), 401
+
+    try:
+        state = await current_app.study_manager.register_login(user_id=user_id, username=username)
+        return jsonify(state), 200
+    except Exception as e:
+        logging.exception("Error in /api/study/login")
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/study/survey", methods=["POST"])
+async def study_update_survey():
+    if not hasattr(current_app, "study_manager") or not current_app.study_manager:
+        return jsonify({"error": "Study manager not initialized"}), 503
+
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user.get("user_principal_id")
+    if not user_id:
+        return jsonify({"error": "User not authenticated"}), 401
+
+    try:
+        data = await request.get_json() or {}
+        survey_key = data.get("survey") or data.get("surveyKey")
+        completed = data.get("completed")
+
+        # Also accept payloads like {"pre_test": true}
+        if not survey_key:
+            for k, v in data.items():
+                if isinstance(v, bool):
+                    survey_key = k
+                    completed = v
+                    break
+
+        if not survey_key:
+            return jsonify({"error": "survey is required"}), 400
+        if completed is None:
+            completed = True
+
+        state = await current_app.study_manager.set_survey_status(
+            user_id=user_id, survey_key=survey_key, completed=bool(completed)
+        )
+        return jsonify(state), 200
+    except Exception as e:
+        logging.exception("Error in /api/study/survey")
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/study/debug/reset", methods=["POST"])
+async def study_debug_reset():
+    if not hasattr(current_app, "study_manager") or not current_app.study_manager:
+        return jsonify({"error": "Study manager not initialized"}), 503
+
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user.get("user_principal_id")
+    username = authenticated_user.get("user_name")
+    if not user_id:
+        return jsonify({"error": "User not authenticated"}), 401
+
+    try:
+        state = await current_app.study_manager.debug_reset_user(user_id=user_id, username=username)
+        return jsonify(state), 200
+    except Exception as e:
+        logging.exception("Error in /api/study/debug/reset")
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/study/debug/set", methods=["POST"])
+async def study_debug_set():
+    if not hasattr(current_app, "study_manager") or not current_app.study_manager:
+        return jsonify({"error": "Study manager not initialized"}), 503
+
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user.get("user_principal_id")
+    username = authenticated_user.get("user_name")
+    if not user_id:
+        return jsonify({"error": "User not authenticated"}), 401
+
+    try:
+        data = await request.get_json() or {}
+        count = data.get("count")
+        group = data.get("group")
+        if count is None:
+            return jsonify({"error": "count is required"}), 400
+
+        state = await current_app.study_manager.debug_set_state(
+            user_id=user_id, login_count=int(count), group=group, username=username
+        )
+        return jsonify(state), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        logging.exception("Error in /api/study/debug/set")
         return jsonify({"error": str(e)}), 500
 
 

@@ -42,3 +42,18 @@ export const markSurveyComplete = async (surveyKey: string): Promise<StudyStatus
 
     return response.json();
 };
+
+export const resetStudyStatus = async (): Promise<{ success: boolean }> => {
+    const response = await fetch('/api/study/reset', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to reset study status');
+    }
+
+    return response.json();
+};

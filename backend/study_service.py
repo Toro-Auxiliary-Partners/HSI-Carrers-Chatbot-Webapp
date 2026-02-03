@@ -98,4 +98,13 @@ class StudyService:
              await self.container_client.upsert_item(doc)
              return doc
          except exceptions.CosmosResourceNotFoundError:
-             raise ValueError("User not found")
+             return None
+
+    async def reset_user_status(self, user_id):
+        doc_id = f"metadata-{user_id}"
+        try:
+            # Delete the metadata document to reset user status
+            await self.container_client.delete_item(item=doc_id, partition_key=user_id)
+            return True
+        except exceptions.CosmosResourceNotFoundError:
+            return False
