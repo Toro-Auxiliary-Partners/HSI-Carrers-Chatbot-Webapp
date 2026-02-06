@@ -30,6 +30,7 @@ export interface AppState {
   feedbackState: { [answerId: string]: Feedback.Neutral | Feedback.Positive | Feedback.Negative }
   isLoading: boolean;
   answerExecResult: { [answerId: string]: [] }
+  isTimerStarted: boolean
 }
 
 export type Action =
@@ -51,6 +52,7 @@ export type Action =
   }
   | { type: 'GET_FEEDBACK_STATE'; payload: string }
   | { type: 'SET_ANSWER_EXEC_RESULT'; payload: { answerId: string, exec_result: [] } }
+  | { type: 'START_TIMER' }
 
 const initialState: AppState = {
   isChatHistoryOpen: false,
@@ -66,6 +68,7 @@ const initialState: AppState = {
   feedbackState: {},
   isLoading: true,
   answerExecResult: {},
+  isTimerStarted: false,
 }
 
 export const AppStateContext = createContext<
