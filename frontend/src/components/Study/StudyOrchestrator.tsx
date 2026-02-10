@@ -153,9 +153,7 @@ export const StudyOrchestrator: React.FC<StudyOrchestratorProps> = ({
         );
     }
 
-    const content = state.group === 'control'
-        ? <iframe src={urls.quiz} style={{ width: '100%', height: '100vh', border: 'none' }} title="Quiz" />
-        : <>{children}</>;
+    const content = <>{children}</>;
 
     return (
         <>

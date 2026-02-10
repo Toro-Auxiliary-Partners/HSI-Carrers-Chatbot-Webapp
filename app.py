@@ -1204,16 +1204,13 @@ async def study_debug_set():
     try:
         data = await request.get_json() or {}
         count = data.get("count")
-        group = data.get("group")
         if count is None:
             return jsonify({"error": "count is required"}), 400
 
         state = await current_app.study_manager.debug_set_state(
-            user_id=user_id, login_count=int(count), group=group, username=username
+            user_id=user_id, login_count=int(count), username=username
         )
         return jsonify(state), 200
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         logging.exception("Error in /api/study/debug/set")
         return jsonify({"error": str(e)}), 500

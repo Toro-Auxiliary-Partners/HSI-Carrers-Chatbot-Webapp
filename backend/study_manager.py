@@ -1,14 +1,10 @@
 import asyncio
 import logging
-import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Literal
+from typing import Any, Dict, Optional
 
 from azure.cosmos import exceptions
-
-
-StudyGroup = Literal["control", "treatment"]
 
 
 @dataclass(frozen=True)
@@ -36,25 +32,6 @@ class StudyManager:
 
     def _now_iso(self) -> str:
         return datetime.now(timezone.utc).isoformat()
-
-    def _assign_group(self, user_id: str, username: Optional[str] = None) -> StudyGroup:
-        candidate = username or user_id or ""
-
-        # Prefer parsing numbers at the end of the username (e.g. aifast299 or aifast299@domain).
-        # Fall back to any trailing digits.
-        local_part = candidate.split("@", 1)[0]
-        match = re.search(r"(\d+)$", local_part)
-        if not match:
-            match = re.search(r"(\d+)$", candidate)
-
-        number = 0
-        if match:
-            try:
-                number = int(match.group(1))
-            except ValueError:
-                number = 0
-
-        return "control" if number < 300 else "treatment"
 
     async def _read_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
         try:
@@ -102,13 +79,11 @@ class StudyManager:
             return False
 
     def _new_profile(self, user_id: str, username: Optional[str] = None) -> Dict[str, Any]:
-        group = self._assign_group(user_id=user_id, username=username)
         now = self._now_iso()
         return {
             "id": self._profile_id(user_id),
             "type": "study_profile",
             "userId": user_id,  # extra field for existing container partition key patterns
-            "group": group,
             "login_count": 0,
             "last_login": None,
             "created_at": now,
@@ -180,19 +155,10 @@ class StudyManager:
         self,
         user_id: str,
         login_count: int,
-        group: Optional[StudyGroup] = None,
         username: Optional[str] = None,
     ) -> Dict[str, Any]:
         profile = await self.get_user_state(user_id=user_id, username=username)
 
         profile["login_count"] = int(login_count)
-        if group in ("control", "treatment"):
-            profile["group"] = group
-        elif group is None:
-            # keep existing
-            pass
-        else:
-            raise ValueError("group must be 'control' or 'treatment'")
-
         profile["updated_at"] = self._now_iso()
         return await self._upsert_profile_with_retry(profile)

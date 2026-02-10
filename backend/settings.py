@@ -102,7 +102,7 @@ class _AzureOpenAISettings(BaseSettings):
         env_ignore_empty=True
     )
     
-    model: str = "gpt-4o"
+    model: str
     key: Optional[str] = None
     resource: Optional[str] = None
     endpoint: Optional[str] = None
