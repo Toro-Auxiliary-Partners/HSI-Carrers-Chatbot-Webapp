@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { Dialog, Stack, TextField } from '@fluentui/react'
 import { CopyRegular } from '@fluentui/react-icons'
+import { useMsal } from "@azure/msal-react"
 
 import { CosmosDBStatus } from '../../api'
 import Contoso from '../../assets/csudhsvg.svg'
@@ -11,6 +12,7 @@ import { AppStateContext } from '../../state/AppProvider'
 import styles from './Layout.module.css'
 
 const Layout = () => {
+  const { accounts } = useMsal();
   const [isSharePanelOpen, setIsSharePanelOpen] = useState<boolean>(false)
   const [copyClicked, setCopyClicked] = useState<boolean>(false)
   const [copyText, setCopyText] = useState<string>('Copy URL')
@@ -80,7 +82,7 @@ const Layout = () => {
         setRemainingTime(prevTime => {
           if (prevTime <= 1) {
             clearInterval(timer);
-            window.location.href = 'https://csudh.qualtrics.com/jfe/form/SV_3HGSME2LdvClYRE';
+            appStateContext?.dispatch({ type: 'TIMER_EXPIRED' });
             return 0;
           }
           return prevTime - 1;
@@ -97,6 +99,9 @@ const Layout = () => {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const username = accounts[0]?.username;
+  const displayId = username?.match(/(aifast\d+)/i)?.[1] || username;
+
   return (
     <div className={styles.layout}>
       <header className={styles.header} role={'banner'}>
@@ -106,9 +111,31 @@ const Layout = () => {
             <Link to="/" className={styles.headerTitleContainer}>
               <h1 className={styles.headerTitle}>{ui?.title}</h1>
             </Link>
+            {displayId && (
+                <div style={{ marginLeft: '20px', fontWeight: 'bold', fontSize: '1.2em' }}>
+                    {displayId}
+                </div>
+            )}
           </Stack>
           <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
             <div>{formatTime(remainingTime)}</div>
+            {appStateContext?.state.isTimerExpired && (
+                 <a 
+                    href="https://csudh.qualtrics.com/jfe/form/SV_3HGSME2LdvClYRE" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={{ 
+                        marginLeft: '10px', 
+                        fontWeight: 'bold', 
+                        color: 'red', 
+                        textDecoration: 'underline',
+                        border: '2px solid red',
+                        padding: '5px' 
+                    }}
+                 >
+                    TAKE POST-TEST SURVEY
+                 </a>
+            )}
             {ui?.show_chat_history_button !== false && (
               <HistoryButton
                 onClick={handleHistoryClick}

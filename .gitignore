@@ -14,3 +14,4 @@ env.json
 static/assets/
 /static/assets
 live-env.json
+repomix-output.xml
