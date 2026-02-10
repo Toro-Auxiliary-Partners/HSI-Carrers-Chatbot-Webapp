@@ -6,7 +6,9 @@ import { MsalProvider } from '@azure/msal-react'
 import { PublicClientApplication } from '@azure/msal-browser'
 
 import Chat from './pages/chat/Chat'
+import Quiz from './pages/quiz/Quiz'
 import Layout from './pages/layout/Layout'
+import { Home } from './pages/home/Home'
 import NoPage from './pages/NoPage'
 import { AppStateProvider } from './state/AppProvider'
 import { msalConfig } from '../authConfig.js'
@@ -24,7 +26,9 @@ export default function App() {
         <HashRouter>
           <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<Chat />} />
+              <Route index element={<Home />} />
+              <Route path="chat" element={<Chat />} />
+              <Route path="quiz" element={<Quiz />} />
               <Route path="*" element={<NoPage />} />
             </Route>
           </Routes>

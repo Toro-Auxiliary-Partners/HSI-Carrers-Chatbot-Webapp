@@ -1,0 +1,82 @@
+.container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+}
+
+.title {
+    font-size: 2.5em;
+    color: #2b88d8;
+    margin-bottom: 30px;
+}
+
+.welcomeUser {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+
+.section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.sectionTitle {
+    font-size: 1.5em;
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #323130;
+}
+
+.instructions {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    color: #605e5c;
+}
+
+.buttonPrimary, .buttonDefault {
+    padding: 12px 24px;
+    font-size: 1.1em;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    margin: 10px;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.buttonPrimary {
+    background-color: #0078d4;
+    color: white;
+}
+
+.buttonPrimary:hover {
+    background-color: #106ebe;
+}
+
+.buttonDefault {
+    background-color: #f3f2f1;
+    color: #323130;
+    border: 1px solid #8a8886;
+}
+
+.buttonDefault:hover {
+    background-color: #edebe9;
+}
+
+.splitButtons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.hidden {
+    display: none;
+}

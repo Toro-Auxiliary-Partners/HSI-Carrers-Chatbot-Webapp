@@ -31,6 +31,7 @@ export interface AppState {
   isLoading: boolean;
   answerExecResult: { [answerId: string]: [] }
   isTimerStarted: boolean
+  isTimerExpired: boolean
 }
 
 export type Action =
@@ -53,6 +54,7 @@ export type Action =
   | { type: 'GET_FEEDBACK_STATE'; payload: string }
   | { type: 'SET_ANSWER_EXEC_RESULT'; payload: { answerId: string, exec_result: [] } }
   | { type: 'START_TIMER' }
+  | { type: 'TIMER_EXPIRED' }
 
 const initialState: AppState = {
   isChatHistoryOpen: false,
@@ -69,6 +71,7 @@ const initialState: AppState = {
   isLoading: true,
   answerExecResult: {},
   isTimerStarted: false,
+  isTimerExpired: false,
 }
 
 export const AppStateContext = createContext<

@@ -1,0 +1,12 @@
+.container {
+    height: calc(100vh - 100px); /* Adjust based on header height */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.iframe {
+    flex-grow: 1;
+    width: 100%;
+    border: none;
+}

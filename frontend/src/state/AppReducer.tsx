@@ -84,6 +84,8 @@ export const appStateReducer = (state: AppState, action: Action): AppState => {
       }
     case 'START_TIMER':
       return { ...state, isTimerStarted: true }
+    case 'TIMER_EXPIRED':
+      return { ...state, isTimerExpired: true, isTimerStarted: false }
     default:
       return state
   }
