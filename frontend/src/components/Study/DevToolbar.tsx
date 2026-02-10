@@ -1,12 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { DefaultButton, Stack, Text } from '@fluentui/react';
 
-export type StudyGroup = 'control' | 'treatment';
-
 export interface StudyProfile {
     id: string;
     type: 'study_profile';
-    group: StudyGroup;
     login_count: number;
     surveys: Record<string, boolean>;
     last_login?: string | null;
@@ -46,8 +43,6 @@ export const DevToolbar: React.FC<DevToolbarProps> = ({ state, isVisible }) => {
     }, [isVisible]);
 
     const loginCount = state?.login_count ?? 0;
-    const group = state?.group ?? 'control';
-
     const run = async (label: string, fn: () => Promise<void>) => {
         try {
             setBusy(label);
@@ -83,7 +78,6 @@ export const DevToolbar: React.FC<DevToolbarProps> = ({ state, isVisible }) => {
 
                 <Stack tokens={{ childrenGap: 2 }}>
                     <Text variant="small">loginCount: <strong>{loginCount}</strong></Text>
-                    <Text variant="small">group: <strong>{group}</strong></Text>
                     <Text variant="small">
                         surveys: <strong>{state ? JSON.stringify(state.surveys) : '{}'}</strong>
                     </Text>
@@ -106,29 +100,7 @@ export const DevToolbar: React.FC<DevToolbarProps> = ({ state, isVisible }) => {
                         disabled={!!busy}
                         onClick={() =>
                             run('login2', async () => {
-                                await postJson('/api/study/debug/set', { count: 2, group });
-                                window.location.reload();
-                            })
-                        }
-                    />
-
-                    <DefaultButton
-                        text={busy === 'control' ? 'Switching…' : 'Switch to Control'}
-                        disabled={!!busy || group === 'control'}
-                        onClick={() =>
-                            run('control', async () => {
-                                await postJson('/api/study/debug/set', { count: loginCount, group: 'control' });
-                                window.location.reload();
-                            })
-                        }
-                    />
-
-                    <DefaultButton
-                        text={busy === 'treatment' ? 'Switching…' : 'Switch to Treatment'}
-                        disabled={!!busy || group === 'treatment'}
-                        onClick={() =>
-                            run('treatment', async () => {
-                                await postJson('/api/study/debug/set', { count: loginCount, group: 'treatment' });
+                                await postJson('/api/study/debug/set', { count: 2 });
                                 window.location.reload();
                             })
                         }
