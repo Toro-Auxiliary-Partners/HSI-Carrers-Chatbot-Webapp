@@ -12,8 +12,9 @@ interface StudyOrchestratorProps {
     quizUrl?: string;
 }
 
-const DEFAULT_PRE_TEST_URL = 'https://csudh.qualtrics.com/jfe/form/SV_065JsNDcr7yxIsm';
-const DEFAULT_POST_TEST_URL = 'https://csudh.qualtrics.com/jfe/form/SV_3HGSME2LdvClYRE';
+const DEFAULT_PRE_TEST_URL = 'https://csudh.qualtrics.com/jfe/form/SV_9YVcDcjw9herDbE';
+const DEFAULT_POST_TEST_URL_1 = 'https://csudh.qualtrics.com/jfe/form/SV_bwwsM3KDoulQMmi';
+const DEFAULT_POST_TEST_URL_2 = 'https://csudh.qualtrics.com/jfe/form/SV_3rwuoCJCtkbrfMy';
 const DEFAULT_QUIZ_URL = 'https://itch.io/embed-upload/16347508?color=333333';
 
 async function getJson<T>(url: string): Promise<T> {
@@ -49,11 +50,15 @@ export const StudyOrchestrator: React.FC<StudyOrchestratorProps> = ({
     const [loading, setLoading] = useState(true);
     const [showPostTest, setShowPostTest] = useState(false);
 
-    const urls = useMemo(
+    const sessionCountString = localStorage.getItem('sessionCount');
+    console.log("sessionCountString", sessionCountString);
+
+    const sessionInfo = useMemo(
         () => ({
-            pre: preTestUrl ?? DEFAULT_PRE_TEST_URL,
-            post: postTestUrl ?? DEFAULT_POST_TEST_URL,
-            quiz: quizUrl ?? DEFAULT_QUIZ_URL,
+            pre: DEFAULT_PRE_TEST_URL,
+            post1: DEFAULT_POST_TEST_URL_1,
+            post2: DEFAULT_POST_TEST_URL_2,
+            quiz: DEFAULT_QUIZ_URL,
         }),
         [preTestUrl, postTestUrl, quizUrl]
     );
@@ -65,20 +70,8 @@ export const StudyOrchestrator: React.FC<StudyOrchestratorProps> = ({
 
     useEffect(() => {
         let mounted = true;
-        (async () => {
-            try {
-                // Register this session (login_count only increments after 30 minutes).
-                const s = await postJson<StudyProfile>('/api/study/login');
-                if (!mounted) return;
-                setState(s);
-            } catch (e) {
-                // eslint-disable-next-line no-console
-                console.error(e);
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        })();
-
+        if (mounted) setLoading(false);
+        console.log(localStorage.getItem('sessionCount'));
         return () => {
             mounted = false;
         };
@@ -137,30 +130,46 @@ export const StudyOrchestrator: React.FC<StudyOrchestratorProps> = ({
             </>
         );
     }
+    
+    const sessionCount : number = sessionCountString ? parseInt(sessionCountString, 10) : 0;
+
+    const content = <>{children}</>;
+
 
     // Pre-test gate (requested: loginCount == 0 and preTest == false)
-    if (state.login_count === 0 && state.surveys?.pre_test === false) {
+    if (sessionCount === 0) {
         return (
             <>
                 <Stack horizontalAlign="center" verticalAlign="center" styles={{ root: { height: '100vh', padding: 20 } }} tokens={{ childrenGap: 16 }}>
                     <Text variant="xxLarge">Pre-Test Survey</Text>
                     <Text variant="large">Please complete the pre-test survey to continue.</Text>
-                    <PrimaryButton href={urls.pre} target="_blank">Go to Survey</PrimaryButton>
+                    <PrimaryButton href={sessionInfo.pre} target="_blank">Go to Survey</PrimaryButton>
                     <DefaultButton onClick={markPreTestComplete}>I have completed the survey</DefaultButton>
                 </Stack>
                 <DevToolbar state={state} isVisible={debugVisible} />
             </>
         );
     }
-
-    const content = <>{children}</>;
-
+    else if (sessionCount === 1) {
+        return (
+            <>
+                <Stack horizontalAlign="center" verticalAlign="center" styles={{ root: { height: '100vh', padding: 20 } }} tokens={{ childrenGap: 16 }}>
+                    <Text variant="xxLarge">Post Test Survey 1</Text>
+                    <Text variant="large">Please complete the post-test survey to continue.</Text>
+                    <PrimaryButton href={sessionInfo.post1} target="_blank">Go to Survey</PrimaryButton>
+                    <DefaultButton onClick={markPreTestComplete}>I have completed the survey</DefaultButton>
+                </Stack>
+                <DevToolbar state={state} isVisible={debugVisible} />
+            </>
+        );
+    }
+   
     return (
         <>
             {content}
             <PostTestDialog
                 isOpen={showPostTest}
-                postUrl={urls.post}
+                postUrl={sessionInfo.post2}
                 onDone={markPostTestComplete}
             />
             <DevToolbar state={state} isVisible={debugVisible} />

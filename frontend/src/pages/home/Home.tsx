@@ -5,8 +5,14 @@ import { Stack, Checkbox, Text, PrimaryButton, DefaultButton, MessageBar, Messag
 import styles from "./Home.module.css";
 import { AppStateContext } from "../../state/AppProvider";
 import { SignInButton } from "../../../SignInButton";
+import { StudyOrchestrator } from "../../components/Study/StudyOrchestrator";
 
-const PRE_TEST_URL = 'https://csudh.qualtrics.com/jfe/form/SV_065JsNDcr7yxIsm';
+const PRE_TEST_URL = 'https://csudh.qualtrics.com/jfe/form/SV_9YVcDcjw9herDbE';
+
+const POST_TEST_1 = 'https://csudh.qualtrics.com/jfe/form/SV_bwwsM3KDoulQMmi';
+
+const POST_TEST_2 = 'https://csudh.qualtrics.com/jfe/form/SV_3rwuoCJCtkbrfMy';
+
 const QUIZ_URL = 'https://itch.io/embed-upload/16347508?color=333333';
 
 // Define a debug user
@@ -57,6 +63,16 @@ export const Home = () => {
          window.open(PRE_TEST_URL, "_blank");
     };
 
+    const handlePostTest1Click = () => {
+        setLoginCount(1);
+        window.open(POST_TEST_1, "_blank");
+    };
+
+    const handlePostTest2Click = () => {
+        setLoginCount(2);
+        window.open(POST_TEST_2, "_blank");
+    };
+
     const handleQuizClick = () => {
         appStateContext?.dispatch({ type: 'START_TIMER' });
         navigate("/quiz");
@@ -65,6 +81,11 @@ export const Home = () => {
     const handleChatbotClick = () => {
         appStateContext?.dispatch({ type: 'START_TIMER' });
         navigate("/chat");
+    };
+
+    const setLoginCount = async (count: number) => {
+        console.log("Setting login count to:", count);
+        const saved = sessionStorage.setItem('sessionCount', count.toString());
     };
 
     return (
@@ -102,6 +123,7 @@ export const Home = () => {
                 <div className={styles.instructions}>
                     <p>If your AIFAST User ID is below 300, please select Quiz button below.</p>
                     <p>If your AIFAST User ID is above 300, please select the Chatbot button.</p>
+                    <p>Take the Study and Post-Test Survey for the first time</p>
                 </div>
                 <div style={{ margin: '20px 0', textAlign: 'left', display: 'inline-block' }}>
                     <Checkbox 
@@ -118,16 +140,21 @@ export const Home = () => {
                 <div className={styles.splitButtons}>
                     <PrimaryButton 
                         text="Below 300: Quiz" 
-                        onClick={handleQuizClick}
+                        onClick={() => {setLoginCount(1); handleQuizClick();}}
                         className={styles.buttonPrimary}
                         style={{ marginRight: '10px', marginBottom: '10px' }}
                     />
                     <PrimaryButton 
                         text="300 & Above: Chatbot" 
-                        onClick={handleChatbotClick}
+                        onClick={() => {setLoginCount(1); handleChatbotClick();}}
                         className={styles.buttonPrimary}
                         style={{ marginBottom: '10px' }}
                     />
+                    <PrimaryButton 
+                    text="Post-Test Survey 1 Only" 
+                    onClick={handlePostTest1Click} 
+                    className={styles.buttonPrimary}
+                />
                 </div>
             </div>
 
@@ -136,6 +163,7 @@ export const Home = () => {
                  <div className={styles.instructions}>
                     <p>If your AIFAST User ID is below 300, please select Quiz button below.</p>
                     <p>If your AIFAST User ID is above 300, please select the Chatbot button.</p>
+                    <p>Take the Study and Post-Test Survey for a second time</p>
                 </div>
                 <div style={{ margin: '20px 0', textAlign: 'left', display: 'inline-block' }}>
                     <Checkbox 
@@ -147,16 +175,22 @@ export const Home = () => {
                 <div className={styles.splitButtons}>
                     <PrimaryButton 
                         text="Below 300: Quiz" 
-                        onClick={handleQuizClick}
+                        onClick={() => {setLoginCount(2); handleQuizClick();}}
                         className={styles.buttonPrimary}
                         style={{ marginRight: '10px', marginBottom: '10px' }}
                     />
                     <PrimaryButton 
                         text="300 & Above: Chatbot" 
-                        onClick={handleChatbotClick}
+                        onClick={() => {setLoginCount(2); handleChatbotClick();}}
                         className={styles.buttonPrimary}
                         style={{ marginBottom: '10px' }}
                     />
+                    <br />
+                <PrimaryButton 
+                    text="Post-Test Survey 2 Only" 
+                    onClick={handlePostTest2Click} 
+                    className={styles.buttonPrimary}
+                />
                 </div>
             </div>
         </div>
