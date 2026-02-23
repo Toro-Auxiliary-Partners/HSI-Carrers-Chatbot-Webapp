@@ -121,15 +121,15 @@ export const Home = () => {
             <div className={styles.section}>
                 <h2 className={styles.sectionTitle}>Session 2: Study and Post-Test Survey</h2>
                 <div className={styles.instructions}>
-                    <p>If your AIFAST User ID is below 300, please select Quiz button below.</p>
-                    <p>If your AIFAST User ID is above 300, please select the Chatbot button.</p>
+                    <p>If your AIFAST User ID is below 300, please select the Chatbot button below.</p>
+                    <p>If your AIFAST User ID is above 300, please select the Quiz button.</p>
                     <p>Take the Study and Post-Test Survey for the first time</p>
                 </div>
                 <div style={{ margin: '20px 0', textAlign: 'left', display: 'inline-block' }}>
-                    <Checkbox 
-                        label="Want to see your AIFAST User ID number?" 
-                        checked={isSecondTime} 
-                        onChange={(e, checked) => setIsSecondTime(!!checked)} 
+                    <Checkbox
+                        label="Want to see your AIFAST User ID number?"
+                        checked={isSecondTime}
+                        onChange={(e, checked) => setIsSecondTime(!!checked)}
                     />
                     {isSecondTime && (
                         <Text style={{ marginLeft: '10px', fontWeight: '600' }}>
@@ -138,15 +138,15 @@ export const Home = () => {
                     )}
                 </div>
                 <div className={styles.splitButtons}>
-                    <PrimaryButton 
-                        text="Below 300: Quiz" 
-                        onClick={() => {setLoginCount(1); handleQuizClick();}}
+                    <PrimaryButton
+                        text="Below 300: Chatbot"
+                        onClick={() => {setLoginCount(1); handleChatbotClick();}}
                         className={styles.buttonPrimary}
                         style={{ marginRight: '10px', marginBottom: '10px' }}
                     />
-                    <PrimaryButton 
-                        text="300 & Above: Chatbot" 
-                        onClick={() => {setLoginCount(1); handleChatbotClick();}}
+                    <PrimaryButton
+                        text="300 & Above: Quiz"
+                        onClick={() => {setLoginCount(1); handleQuizClick();}}
                         className={styles.buttonPrimary}
                         style={{ marginBottom: '10px' }}
                     />
@@ -161,27 +161,27 @@ export const Home = () => {
             <div className={styles.section}>
                  <h2 className={styles.sectionTitle}>Session 3</h2>
                  <div className={styles.instructions}>
-                    <p>If your AIFAST User ID is below 300, please select Quiz button below.</p>
-                    <p>If your AIFAST User ID is above 300, please select the Chatbot button.</p>
+                    <p>If your AIFAST User ID is below 300, please select the Chatbot button below.</p>
+                    <p>If your AIFAST User ID is above 300, please select the Quiz button.</p>
                     <p>Take the Study and Post-Test Survey for a second time</p>
                 </div>
                 <div style={{ margin: '20px 0', textAlign: 'left', display: 'inline-block' }}>
-                    <Checkbox 
-                        label="Did you already complete Session 2?" 
-                        checked={isThirdTime} 
-                        onChange={(e, checked) => {setIsFirstTime(false); setIsSecondTime(!!!checked); setIsThirdTime(!!checked); }} 
+                    <Checkbox
+                        label="Did you already complete Session 2?"
+                        checked={isThirdTime}
+                        onChange={(e, checked) => {setIsFirstTime(false); setIsSecondTime(!!!checked); setIsThirdTime(!!checked); }}
                     />
                 </div>
                 <div className={styles.splitButtons}>
-                    <PrimaryButton 
-                        text="Below 300: Quiz" 
-                        onClick={() => {setLoginCount(2); handleQuizClick();}}
+                    <PrimaryButton
+                        text="Below 300: Chatbot"
+                        onClick={() => {setLoginCount(2); handleChatbotClick();}}
                         className={styles.buttonPrimary}
                         style={{ marginRight: '10px', marginBottom: '10px' }}
                     />
-                    <PrimaryButton 
-                        text="300 & Above: Chatbot" 
-                        onClick={() => {setLoginCount(2); handleChatbotClick();}}
+                    <PrimaryButton
+                        text="300 & Above: Quiz"
+                        onClick={() => {setLoginCount(2); handleQuizClick();}}
                         className={styles.buttonPrimary}
                         style={{ marginBottom: '10px' }}
                     />
