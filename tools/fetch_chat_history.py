@@ -1,14 +1,90 @@
 import asyncio
 import os
 import sys
-import json
+from datetime import datetime
 from azure.identity.aio import DefaultAzureCredential
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 # Add project root to sys.path to import backend modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from backend.settings import app_settings
 from backend.history.cosmosdbservice import CosmosConversationClient
+
+COLUMNS = [
+    ("User ID",              28),
+    ("Conversation ID",      36),
+    ("Conversation Title",   30),
+    ("Conversation Created", 22),
+    ("Message #",           10),
+    ("Role",                12),
+    ("Timestamp",           22),
+    ("Message Content",     80),
+]
+
+HEADER_FILL  = PatternFill("solid", fgColor="1F4E79")
+USER_FILL    = PatternFill("solid", fgColor="D6E4F0")
+AI_FILL      = PatternFill("solid", fgColor="E8F5E9")
+TOOL_FILL    = PatternFill("solid", fgColor="FFF9C4")
+HEADER_FONT  = Font(bold=True, color="FFFFFF", name="Calibri", size=11)
+CELL_FONT    = Font(name="Calibri", size=10)
+THIN_BORDER  = Border(
+    left=Side(style="thin", color="CCCCCC"),
+    right=Side(style="thin", color="CCCCCC"),
+    top=Side(style="thin", color="CCCCCC"),
+    bottom=Side(style="thin", color="CCCCCC"),
+)
+
+ROLE_FILLS = {"user": USER_FILL, "assistant": AI_FILL}
+
+
+def build_workbook(rows: list[dict]) -> openpyxl.Workbook:
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Chat History"
+
+    # ── Header row ──────────────────────────────────────────────────────
+    for col_idx, (name, width) in enumerate(COLUMNS, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=name)
+        cell.font    = HEADER_FONT
+        cell.fill    = HEADER_FILL
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border  = THIN_BORDER
+        ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+    ws.row_dimensions[1].height = 20
+    ws.freeze_panes = "A2"
+
+    # ── Data rows ────────────────────────────────────────────────────────
+    for row_idx, r in enumerate(rows, start=2):
+        values = [
+            r["user_id"],
+            r["conv_id"],
+            r["conv_title"],
+            r["conv_created"],
+            r["msg_num"],
+            r["role"],
+            r["timestamp"],
+            r["content"],
+        ]
+        fill = ROLE_FILLS.get(r["role"], TOOL_FILL)
+        for col_idx, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.font      = CELL_FONT
+            cell.fill      = fill
+            cell.border    = THIN_BORDER
+            cell.alignment = Alignment(
+                vertical="top",
+                wrap_text=(col_idx == len(COLUMNS)),  # wrap only content column
+            )
+
+    # ── Auto-filter ──────────────────────────────────────────────────────
+    ws.auto_filter.ref = ws.dimensions
+
+    return wb
+
 
 async def fetch_history():
     # 1. Initialize Configuration
@@ -19,7 +95,6 @@ async def fetch_history():
     print(f"Connecting to Cosmos DB: {app_settings.chat_history.account}")
 
     # 2. Authenticate
-    credential = None
     if app_settings.chat_history.account_key:
         credential = app_settings.chat_history.account_key
     else:
@@ -33,7 +108,7 @@ async def fetch_history():
         database_name=app_settings.chat_history.database,
         container_name=app_settings.chat_history.conversations_container
     )
-    
+
     success, msg = await client.ensure()
     if not success:
         print(f"Failed to connect: {msg}")
@@ -45,15 +120,8 @@ async def fetch_history():
     print("Fetching all users...")
     query = "SELECT DISTINCT VALUE c.userId FROM c WHERE c.type = 'conversation'"
     users = []
-    
     try:
-        # Accessing private/internal container_client if possible, or we rely on the fact that python doesn't strictly enforce private.
-        # The class has self.container_client
-        items = client.container_client.query_items(
-            query=query,
-            enable_cross_partition_query=True
-        )
-        async for item in items:
+        async for item in client.container_client.query_items(query=query):
             users.append(item)
     except Exception as e:
         print(f"Error fetching users: {e}")
@@ -61,33 +129,60 @@ async def fetch_history():
 
     print(f"Found {len(users)} users.")
 
-    # 5. Fetch and Print History per User
+    # 5. Collect all rows
+    all_rows = []
     for user_id in users:
-        print(f"\n=== History for User: {user_id} ===")
+        print(f"  Fetching conversations for user: {user_id}")
         conversations = await client.get_conversations(user_id, limit=None)
         if not conversations:
-            print("  No conversations found.")
             continue
 
         for conv in conversations:
-            print(f"  Conversation ID: {conv['id']}")
-            print(f"  Title: {conv.get('title', 'N/A')}")
-            print(f"  Created: {conv['createdAt']}")
-            
-            messages = await client.get_messages(user_id, conv['id'])
-            if messages:
-                print("    Messages:")
-                for msg in messages:
-                    role = msg.get('role', 'unknown')
-                    content = msg.get('content', '')
-                    print(f"      [{role}]: {content[:100]}..." if len(content) > 100 else f"      [{role}]: {content}")
-            else:
-                print("    (No messages)")
-            print("-" * 40)
+            conv_id      = conv["id"]
+            conv_title   = conv.get("title", "")
+            conv_created = conv.get("createdAt", "")
 
-    # Clean up credential if it's an object
+            messages = await client.get_messages(user_id, conv_id)
+            if not messages:
+                # Still record the conversation with no messages
+                all_rows.append({
+                    "user_id":      user_id,
+                    "conv_id":      conv_id,
+                    "conv_title":   conv_title,
+                    "conv_created": conv_created,
+                    "msg_num":      "",
+                    "role":         "",
+                    "timestamp":    "",
+                    "content":      "(no messages)",
+                })
+                continue
+
+            for msg_num, msg in enumerate(messages, start=1):
+                all_rows.append({
+                    "user_id":      user_id,
+                    "conv_id":      conv_id,
+                    "conv_title":   conv_title,
+                    "conv_created": conv_created,
+                    "msg_num":      msg_num,
+                    "role":         msg.get("role", ""),
+                    "timestamp":    msg.get("createdAt", msg.get("updatedAt", "")),
+                    "content":      msg.get("content", ""),
+                })
+
+    # 6. Write Excel
+    timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir    = os.path.join(os.path.dirname(__file__), '..', 'tools')
+    out_path   = os.path.abspath(os.path.join(out_dir, f"chat_history_{timestamp}.xlsx"))
+
+    wb = build_workbook(all_rows)
+    wb.save(out_path)
+    print(f"\nExported {len(all_rows)} rows to: {out_path}")
+
+    # 7. Clean up
     if not app_settings.chat_history.account_key and hasattr(credential, 'close'):
         await credential.close()
+    await client.cosmosdb_client.close()
+
 
 if __name__ == "__main__":
     try:
